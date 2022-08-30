@@ -24,7 +24,7 @@ jobs:
     steps:
     - uses: actions/checkout@main
       with:
-        submodules: true
+        submodules: recursive
     - name: Build ${{ matrix.platform }} binary
       run: make ${{ matrix.platform }}
     - uses: actions/upload-artifact@v3
