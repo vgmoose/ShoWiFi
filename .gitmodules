@@ -1,0 +1,3 @@
+[submodule "libs/chesto"]
+	path = libs/chesto
+	url = https://github.com/fortheusers/chesto.git
