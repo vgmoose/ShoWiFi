@@ -15,14 +15,16 @@ jobs:
     strategy:
       matrix:
         include:
-          - platform: "switch"
-            ext: "nro"
-          - platform: "pc"
-            ext: "bin"
+          - platform: switch
+            ext: nro
+          - platform: pc
+            ext: bin
     container:
       image: ghcr.io/fortheusers/sealeo:latest
     steps:
     - uses: actions/checkout@main
+      with:
+        submodules: true
     - name: Build ${{ matrix.platform }} binary
       run: make ${{ matrix.platform }}
     - uses: actions/upload-artifact@v3
