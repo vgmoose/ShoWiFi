@@ -9,29 +9,22 @@ on:
     branches:
       - main
 
-.common: &common
+jobs:
   runs-on: ubuntu-latest
+  strategy:
+    matrix:
+      include:
+        - platform: "switch"
+          ext: "nro"
+        - platform: "pc"
+          ext: "bin"
   container:
     image: ghcr.io/fortheusers/sealeo:latest
-    volumes:
-      - $(pwd):/code
   steps:
   - uses: actions/checkout@main
-  - name: Build ${{ env.PLATFORM }} binary
-    run: make $PLATFORM
+  - name: Build ${{ matrix.platform }} binary
+    run: make ${{ matrix.platform }}
   - uses: actions/upload-artifact@v3
     with:
-      name: ${{ env.PLATFORM }}.${{ env.EXT }}
-      path: /code/${{ env.PLATFORM }}.${{ env.EXT }}
-
-jobs:
-  switch:
-    <<: *common
-    env:
-      PLATFORM: switch
-      EXT: .nro
-  pc:
-    <<: *common
-    env:
-      PLATFORM: pc
-      EXT: .bin
+      name: ${{ matrix.platform }}.${{ matrix.ext }}
+      path: /code/${{ matrix.platform }}.${{ matrix.ext }}
