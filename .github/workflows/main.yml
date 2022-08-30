@@ -10,21 +10,22 @@ on:
       - main
 
 jobs:
-  runs-on: ubuntu-latest
-  strategy:
-    matrix:
-      include:
-        - platform: "switch"
-          ext: "nro"
-        - platform: "pc"
-          ext: "bin"
-  container:
-    image: ghcr.io/fortheusers/sealeo:latest
-  steps:
-  - uses: actions/checkout@main
-  - name: Build ${{ matrix.platform }} binary
-    run: make ${{ matrix.platform }}
-  - uses: actions/upload-artifact@v3
-    with:
-      name: ${{ matrix.platform }}.${{ matrix.ext }}
-      path: /code/${{ matrix.platform }}.${{ matrix.ext }}
+  all:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - platform: "switch"
+            ext: "nro"
+          - platform: "pc"
+            ext: "bin"
+    container:
+      image: ghcr.io/fortheusers/sealeo:latest
+    steps:
+    - uses: actions/checkout@main
+    - name: Build ${{ matrix.platform }} binary
+      run: make ${{ matrix.platform }}
+    - uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.platform }}.${{ matrix.ext }}
+        path: /code/${{ matrix.platform }}.${{ matrix.ext }}
