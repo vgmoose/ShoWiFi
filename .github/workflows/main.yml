@@ -4,24 +4,25 @@ on:
   push:
     branches:
       - main
+      - ci-woes
   pull_request:
     branches:
       - main
 
 .common: &common
   runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/fortheusers/sealeo:latest
-      volumes:
-        - $(pwd):/code
-    steps:
-    - uses: actions/checkout@main
-    - name: Build ${{ env.PLATFORM }} binary
-      run: make $PLATFORM
-    - uses: actions/upload-artifact@v3
-      with:
-        name: ${{ env.PLATFORM }}.${{ env.EXT }}
-        path: /code/${{ env.PLATFORM }}.${{ env.EXT }}
+  container:
+    image: ghcr.io/fortheusers/sealeo:latest
+    volumes:
+      - $(pwd):/code
+  steps:
+  - uses: actions/checkout@main
+  - name: Build ${{ env.PLATFORM }} binary
+    run: make $PLATFORM
+  - uses: actions/upload-artifact@v3
+    with:
+      name: ${{ env.PLATFORM }}.${{ env.EXT }}
+      path: /code/${{ env.PLATFORM }}.${{ env.EXT }}
 
 jobs:
   switch:
