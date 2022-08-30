@@ -1,3 +1,9 @@
 *.o
 *.DS_Store
 *.bin
+.vscode
+build_*
+*.elf
+*.nso
+*.nro
+*.pfs0
