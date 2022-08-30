@@ -26,8 +26,8 @@ jobs:
       with:
         submodules: recursive
     - name: Build ${{ matrix.platform }} binary
-      run: make ${{ matrix.platform }}
+      run: apt-get -y install libbz2-dev && make ${{ matrix.platform }}
     - uses: actions/upload-artifact@v3
       with:
-        name: ${{ matrix.platform }}.${{ matrix.ext }}
+        name: WiiFiUShowMii.${{ matrix.ext }}
         path: /code/${{ matrix.platform }}.${{ matrix.ext }}
