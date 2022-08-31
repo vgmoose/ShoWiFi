@@ -31,7 +31,7 @@ bool readWifiInfo(WifiInfo* wifiInfo) {
         }
         char* pass = (char*)(data.passphrase) + 1; // TODO: unicode support?
         // TODO: passphrase length may not be part of this field in the future
-        int pass_len = int(pass[0]);
+        int pass_len = int(data.passphrase[0]);
         pass[pass_len] = '\0';
         if (pass_len > 0) {
             wifiInfo->auth = std::string(pass);
