@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
     bool success = readWifiInfo(&wifiInfo);
 
     // can be used to test on PC
-    success = true;
+    // success = true;
 
     if (success)
     {

@@ -7,3 +7,4 @@ build_*
 *.nso
 *.nro
 *.pfs0
+*.rpx
