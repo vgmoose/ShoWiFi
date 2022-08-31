@@ -1,9 +1,11 @@
-#ifdef SWITCH
-#include <switch.h>
-#endif
-
 #include <sstream>
 #include <iostream>
+
+#if defined(SWITCH)
+#include <switch.h>
+#elif defined(__WIIU__)
+#include <nsysnet/netconfig.h>
+#endif
 
 #include "libs/chesto/src/Container.hpp"
 #include "libs/chesto/src/TextElement.hpp"
@@ -13,10 +15,11 @@ class WifiInfo {
 public:
     std::string ssid = "N/A";
     std::string auth = "N/A";
+    bool unsupported = false;
 };
 
 bool readWifiInfo(WifiInfo* wifiInfo) {
-#ifdef SWITCH
+#if defined(SWITCH)
     nifmInitialize(NifmServiceType_System);
     NifmNetworkProfileData profileData;
     Result res = nifmGetCurrentNetworkProfile(&profileData);
@@ -38,6 +41,31 @@ bool readWifiInfo(WifiInfo* wifiInfo) {
         }
         return true;
     }
+#elif defined(__WIIU__)
+    NetConfWifiConfig wifiConfig;
+    int success = netconf_get_wifi_cfg(&wifiConfig);
+
+    if (success == 0) {
+        auto config = wifiConfig.config;
+        auto ssid_len = config.ssidlength;
+        char* ssid = (char*)config.ssid;
+        ssid[ssid_len] = '\0';
+        if (ssid_len > 0) {
+            wifiInfo->ssid = std::string(ssid);
+        }
+        auto privacy = config.privacy;
+        auto pass_len = privacy.aes_key_len;
+        char* pass = (char*)privacy.aes_key;
+        pass[pass_len] = '\0';
+        if (pass_len > 0) {
+            wifiInfo->auth = std::string(pass);
+        }
+        return true;
+    }
+#else
+    // we aren't switch or wiiu, so we don't have wifi info
+    // TODO: add 3ds and Wii support here
+    wifiInfo->unsupported = true;
 #endif
     return false;
 }
@@ -75,9 +103,14 @@ int main(int argc, char* argv[])
         con->add(row2);
     } else
     {
-        con->add(new TextElement("There was an issue trying to read WiFi info!", 36));
-        con->add(new TextElement("This app can only display info about the current network.", 24))->centerHorizontallyIn(con);
-        con->add(new TextElement("Please connect to a wireless hotspot in settings and retry.", 24))->centerHorizontallyIn(con);
+        if (wifiInfo.unsupported) {
+            con->add(new TextElement("Unsupported platform!", 36));
+            con->add(new TextElement("This build will never return any WiFi info.", 30));
+        } else {
+            con->add(new TextElement("There was an issue trying to read WiFi info!", 36));
+            con->add(new TextElement("This app can only display info about the current network.", 24))->centerHorizontallyIn(con);
+            con->add(new TextElement("Please connect to a wireless hotspot in settings and retry.", 24))->centerHorizontallyIn(con);
+        }
     }
 
     con->height += 10;

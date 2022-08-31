@@ -18,6 +18,8 @@ jobs:
             ext: nro
           - platform: pc
             ext: bin
+          - platform: wiiu
+            ext: rpx
     container:
       image: ghcr.io/fortheusers/sealeo:latest
     steps:
