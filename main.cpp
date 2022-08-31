@@ -11,6 +11,8 @@
 #include "libs/chesto/src/TextElement.hpp"
 #include "libs/chesto/src/Button.hpp"
 
+int monoOffset = 10;
+
 class WifiInfo {
 public:
     std::string ssid = "N/A";
@@ -43,9 +45,13 @@ bool readWifiInfo(WifiInfo* wifiInfo) {
     }
 #elif defined(__WIIU__)
     NetConfWifiConfig wifiConfig;
+    netconf_init();
     int success = netconf_get_wifi_cfg(&wifiConfig);
+    netconf_close();
 
-    if (success == 0) {
+    monoOffset = 0;
+
+    if (success >= 0) {
         auto config = wifiConfig.config;
         auto ssid_len = config.ssidlength;
         char* ssid = (char*)config.ssid;
@@ -83,10 +89,10 @@ int main(int argc, char* argv[])
     // success = true;
 
     if (success)
-    {
+    {        
         Container* row1 = new Container(ROW_LAYOUT, 6);
         row1->add(new TextElement("SSID:", 30));
-        row1->add(new TextElement(wifiInfo.ssid.c_str(), 30, 0, MONOSPACED))->y += 10;
+        row1->add(new TextElement(wifiInfo.ssid.c_str(), 30, 0, MONOSPACED))->y += monoOffset;
 
         Container* row2 = new Container(ROW_LAYOUT, 6);
         row2->add(new TextElement("Auth:", 30));
@@ -94,7 +100,7 @@ int main(int argc, char* argv[])
             // replace button with the password
             auto btn = row2->elements.back();
             auto x = btn->x;
-            auto y = btn->y + 10;
+            auto y = btn->y + monoOffset;
             row2->elements.pop_back();
             row2->elements.push_back((new TextElement(wifiInfo.auth.c_str(), 30, 0, MONOSPACED))->setPosition(x, y));
         });
