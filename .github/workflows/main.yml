@@ -20,6 +20,8 @@ jobs:
             ext: bin
           - platform: wiiu
             ext: rpx
+          - platform: wiiu
+            ext: wuhb
     container:
       image: ghcr.io/fortheusers/sealeo:latest
     steps:
