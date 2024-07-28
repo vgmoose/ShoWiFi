@@ -34,5 +34,5 @@ jobs:
       run: make ${{ matrix.platform }}
     - uses: actions/upload-artifact@v3
       with:
-        name: WiiFiUShowMii.${{ matrix.ext }}
-        path: /__w/WiiFiUShowMii/WiiFiUShowMii/WiiFiUShowMii.${{ matrix.ext }}
+        name: ShoWiFi.${{ matrix.ext }}
+        path: /__w/ShoWiFi/ShoWiFi/ShoWiFi.${{ matrix.ext }}
