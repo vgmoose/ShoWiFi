@@ -14,14 +14,16 @@ jobs:
     strategy:
       matrix:
         include:
-          - platform: switch
-            ext: nro
           - platform: pc
             ext: bin
-          - platform: wiiu
-            ext: rpx
+          - platform: wii
+            ext: dol
           - platform: wiiu
             ext: wuhb
+          - platform: 3ds
+            ext: 3dsx
+          - platform: switch
+            ext: nro
     container:
       image: ghcr.io/fortheusers/sealeo:latest
     steps:
