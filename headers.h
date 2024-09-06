@@ -1,11 +1,17 @@
-#if defined(WII)
+#if defined(WII) || defined(WII_MOCK)
 // Wii Headers from https://wiibrew.org/wiki//shared2/sys/net/02/config.dat
 
 #define WII_CONFIG_PATH "/shared2/sys/net/02/config.dat"
 // there is a note that the above path changes on <= IOS10:
 // https://wiibrew.org/wiki//shared2/sys/net/config.dat
 
+#if defined(WII)
 #include <gccore.h>
+#else
+#define u8 unsigned char
+#define u16 unsigned short
+#define u32 unsigned int
+#endif
 
 struct _proxy
 {

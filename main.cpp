@@ -87,26 +87,49 @@ bool readWifiInfo(WifiInfo* wifiInfo) {
         // TODO: look up password, using parsing methods in headers.h
         return true;
     }
-#elif defined(WII)
+#elif defined(WII) || defined(WII_MOCK)
+    netconfig_t config;
+
+#if WII_MOCK
+    // use normal open and read
+    FILE* file = fopen("./config.dat", "rb");
+    if (file == NULL) {
+        printf("Error opening file\n");
+        return false;
+    }
+    fread(&config, sizeof(netconfig_t), 1, file);
+    fclose(file);
+#else
     // init libogc
     WII_Initialize();
 
     // open the wii config path
-    FILE* file = fopen(WII_CONFIG_PATH, "rb");
-    // read the entire file contents into the netconfig_t struct
-    netconfig_t config;
-    fread(&config, sizeof(netconfig_t), 1, file);
-    fclose(file);
+    s32 file = IOS_Open(WII_CONFIG_PATH, IPC_OPEN_READ);
+    if (file < 0) {
+        fprintf(stderr, "Error opening file: %d\n", file);
+        return false;
+    }
+
+    // read config info from file
+    s32 bytesRead = IOS_Read(file, &config, sizeof(netconfig_t));
+    if (bytesRead < 0) {
+        fprintf(stderr, "Error reading file: %d\n", bytesRead);
+        IOS_Close(file);
+        return false;
+    }
+    IOS_Close(file);
+#endif
 
     // check if we're online
     if (config.header4 == 0) {
+        printf("Not connected to the internet\n");
         return false;
     }
 
     int connectionIndex = 0;
     // search the connections for the one that is connected and wireless
     for (int i = 0; i < 3; i++) {
-        if ((config.connection[i].flags >> 31) & 0x01 && config.connection[i].flags & 0x01 == 0) {
+        if ((config.connection[i].flags >> 7) & 0x01 && config.connection[i].flags & 0x01 == 0) {
             connectionIndex = i;
             break;
         }
@@ -140,6 +163,7 @@ int main(int argc, char* argv[])
 {
 	RootDisplay* display = new RootDisplay();
     Container* con = new Container(COL_LAYOUT, 8);
+    RootDisplay::idleCursorPulsing = true;
 
     WifiInfo wifiInfo;
     bool success = readWifiInfo(&wifiInfo);
