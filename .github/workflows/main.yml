@@ -32,7 +32,7 @@ jobs:
         submodules: recursive
     - name: Build ${{ matrix.platform }} binary
       run: make ${{ matrix.platform }}
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: ShoWiFi.${{ matrix.ext }}
         path: /__w/ShoWiFi/ShoWiFi/ShoWiFi.${{ matrix.ext }}
