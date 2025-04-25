@@ -2,7 +2,7 @@ BINARY      := ShoWiFi
 
 APP_TITLE	:= ShoWiFi
 APP_AUTHOR 	:= vgmoose
-APP_VERSION := 1.0
+APP_VERSION := 1.0.1
 
 SOURCES		+= . 
 
