@@ -217,7 +217,7 @@ int main(int argc, char* argv[])
     con->height += 10;
 
     con->add(new Button("Close App", B_BUTTON))->centerHorizontallyIn(con)->setAction([display](){
-		display->isRunning = false;
+		display->requestQuit();
 	});
 
     con->centerIn(display);
