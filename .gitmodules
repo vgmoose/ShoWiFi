@@ -1,3 +1,6 @@
 [submodule "libs/chesto"]
 	path = libs/chesto
 	url = https://github.com/fortheusers/chesto.git
+[submodule "libs/libqrencode"]
+	path = libs/libqrencode
+	url = https://github.com/fukuchi/libqrencode.git
