@@ -7,10 +7,13 @@
 #include <nsysnet/netconfig.h>
 #endif
 
+#include "./libs/libqrencode/qrenc.c"
+
 #include "libs/chesto/src/Container.hpp"
 #include "libs/chesto/src/TextElement.hpp"
 #include "libs/chesto/src/Button.hpp"
 #include "libs/chesto/src/Constraint.hpp"
+#include "libs/chesto/src/ImageElement.hpp"
 
 #include "headers.h"
 
@@ -20,6 +23,9 @@ class WifiInfo {
 public:
     std::string ssid = "N/A";
     std::string auth = "N/A";
+    bool isWPA = false;
+    bool isWEP = false;
+    bool isHidden = false;
     bool unsupported = false;
 };
 
@@ -45,6 +51,7 @@ bool readWifiInfo(WifiInfo* wifiInfo) {
         pass[pass_len] = '\0';
         if (pass_len > 0) {
             wifiInfo->auth = std::string(pass);
+            wifiInfo->isWPA = true;
         }
         return true;
     }
@@ -68,6 +75,7 @@ bool readWifiInfo(WifiInfo* wifiInfo) {
         pass[pass_len] = '\0';
         if (pass_len > 0) {
             wifiInfo->auth = std::string(pass);
+            wifiInfo->isWPA = true;
         }
         return true;
     }
@@ -156,14 +164,13 @@ bool readWifiInfo(WifiInfo* wifiInfo) {
     // we aren't a supported platform, so we don't have wifi info
     wifiInfo->unsupported = true;
 #endif
-    return false;
+    return true;
 }
 
 int main(int argc, char* argv[])
 {
 	RootDisplay* display = new RootDisplay();
     Container* con = new Container(COL_LAYOUT, 8);
-    RootDisplay::idleCursorPulsing = true;
 
     WifiInfo wifiInfo;
     bool success = readWifiInfo(&wifiInfo);
@@ -187,7 +194,7 @@ int main(int argc, char* argv[])
 
         Container* row2 = new Container(ROW_LAYOUT, 6);
         row2->add(new TextElement("Auth:", font_size));
-        row2->add(new Button("Show", X_BUTTON))->setAction([row1, row2, wifiInfo, font_size, con]() {
+        row2->add(new Button("Show", X_BUTTON, true))->setAction([row1, row2, wifiInfo, font_size, con]() {
             // replace button with the password
             auto btn = row2->elements.back();
             auto x = btn->x;
@@ -214,14 +221,78 @@ int main(int argc, char* argv[])
         con->width = SCREEN_WIDTH;
     }
 
+    con->height += 60;
+
+    auto escapeSpecialChars = [](std::string str) {
+        // escape ;, :, comma, and \ in the string
+        std::ostringstream ss;
+        for (char c : str) {
+            if (c == ';' || c == ':' || c == ',' || c == '\\') {
+                ss << '\\';
+            }
+            ss << c;
+        }
+        return ss.str();
+    };
+
+    auto buildWifiString = [escapeSpecialChars](WifiInfo* wifiInfo) {
+        // escape ;, :, and , in the ssid
+        std::ostringstream ss;
+        ss << "WIFI:";
+        if (wifiInfo->isWPA) {
+            ss << "T:WPA;";
+        } else if (wifiInfo->isWEP) {
+            ss << "T:WEP;";
+        } else {
+            ss << "T:nopass;";
+        }
+        ss << "S:" << escapeSpecialChars(wifiInfo->ssid) << ";";
+        if (wifiInfo->auth.length() > 0) {
+            ss << "P:" << escapeSpecialChars(wifiInfo->auth) << ";";
+        }
+        ss << "H:false;;"; // TODO: handle this?
+        return ss.str();
+    };
+
+    // create a QR code image element
+    // write the QR code png
+    std::string imgKey = "qr_showifi_tmp.png";
+    std::string qrString = buildWifiString(&wifiInfo);
+
+    // std::cout << "QR String: " << qrString << std::endl;
+
+    margin = 1;
+    QRcode* qrCode = encode(reinterpret_cast<const unsigned char*>(qrString.c_str()), qrString.length());
+    writePNG(qrCode, imgKey.c_str(), PNG32_TYPE);
+
+    ImageElement* qrImage = new ImageElement(imgKey);
+    qrImage->setSize(200, 200);
+    con->add(qrImage);
+
+    // delete the image file
+    std::remove(imgKey.c_str());
+    QRcode_free(qrCode);
+
     con->height += 10;
 
-    con->add(new Button("Close App", B_BUTTON))->centerHorizontallyIn(con)->setAction([display](){
-		display->requestQuit();
-	});
+    TextElement* qrText = new TextElement("Scan to share network setup!", font_size - font_mod);
+    con->add(qrText);
+
+    // center these after the container is fully built
+    qrText->centerHorizontallyIn(con);
+    qrImage->centerHorizontallyIn(con);
 
     con->centerIn(display);
     display->child(con);
+
+    // put the quit button in the bottom right
+    auto quitBtn = new Button("Close App", B_BUTTON, true);
+    quitBtn->setAction([](){
+		RootDisplay::mainDisplay->requestQuit();
+	});
+    quitBtn->constrain(ALIGN_BOTTOM | ALIGN_RIGHT, 35);
+    display->child(quitBtn);
+
 
     // if we're on 3ds, we have to offset the container to target only the bottom screen
     #if defined(_3DS) || defined(_3DS_MOCK)
