@@ -7,7 +7,7 @@
 #include <nsysnet/netconfig.h>
 #endif
 
-#include "./libs/libqrencode/qrenc.c"
+#include "./libs/libqrencode/qrencode.h"
 
 #include "libs/chesto/src/Container.hpp"
 #include "libs/chesto/src/TextElement.hpp"
@@ -164,7 +164,7 @@ bool readWifiInfo(WifiInfo* wifiInfo) {
     // we aren't a supported platform, so we don't have wifi info
     wifiInfo->unsupported = true;
 #endif
-    return true;
+    return false;
 }
 
 int main(int argc, char* argv[])
@@ -208,8 +208,91 @@ int main(int argc, char* argv[])
 
         con->add(row1);
         con->add(row2);
-    } else
-    {
+
+#if !defined(_3DS) && !defined(_3DS_MOCK)
+        con->height += 60;
+#endif
+
+        auto escapeSpecialChars = [](std::string str) {
+            // escape ;, :, comma, and \ in the string
+            std::ostringstream ss;
+            for (char c : str) {
+                if (c == ';' || c == ':' || c == ',' || c == '\\') {
+                    ss << '\\';
+                }
+                ss << c;
+            }
+            return ss.str();
+        };
+
+        auto buildWifiString = [escapeSpecialChars](WifiInfo* wifiInfo) {
+            // escape ;, :, and , in the ssid
+            std::ostringstream ss;
+            ss << "WIFI:";
+            if (wifiInfo->isWPA) {
+                ss << "T:WPA;";
+            } else if (wifiInfo->isWEP) {
+                ss << "T:WEP;";
+            } else {
+                ss << "T:nopass;";
+            }
+            ss << "S:" << escapeSpecialChars(wifiInfo->ssid) << ";";
+            if (wifiInfo->isWPA || wifiInfo->isWEP) {
+                ss << "P:" << escapeSpecialChars(wifiInfo->auth) << ";";
+            }
+            ss << "H:false;;"; // TODO: handle this? (hidden network)
+            return ss.str();
+        };
+
+        // create a QR code directly to SDL texture
+        std::string qrString = buildWifiString(&wifiInfo);
+        std::cout << "QR String: " << qrString << std::endl;
+
+        QRcode* qrCode = QRcode_encodeString(qrString.c_str(), 0, QR_ECLEVEL_L, QR_MODE_8, 1);
+
+        auto height = qrCode->width + 2;
+        auto width = qrCode->width + 2;
+        auto newSurface = SDL_CreateRGBSurface(0, width, height, 32, 0, 0, 0, 0);
+
+        // fill the background with white
+        SDL_FillRect(newSurface, NULL, SDL_MapRGB(newSurface->format, 255, 255, 255));
+
+        for (int y = 0; y < qrCode->width; y++) {
+            for (int x = 0; x < qrCode->width; x++) {
+                // lowest bit = 1 is a black pixel
+                if (qrCode->data[y * qrCode->width + x] & 1) {
+                    SDL_Rect rect = { y + 1, x + 1, 1, 1 };
+                    SDL_FillRect(newSurface, &rect, SDL_MapRGB(newSurface->format, 0, 0, 0));
+                }
+            }
+        }
+
+        // create a Chesto texture from the surface
+        CST_SetQualityHint("nearest");
+        Texture* qrTexture = new Texture();
+        qrTexture->loadFromSurface(newSurface);
+        SDL_FreeSurface(newSurface);
+        QRcode_free(qrCode);
+
+        qrTexture->setSize(200, 200);
+#if defined(_3DS) || defined(_3DS_MOCK)
+        qrTexture->setSize(100, 100);
+#endif
+
+        con->add(qrTexture);
+
+#if !defined(_3DS) && !defined(_3DS_MOCK)
+        con->height += 15;
+#endif
+
+        TextElement* qrText = new TextElement("Scan to share network setup!", font_size - font_mod);
+        con->add(qrText);
+
+        // center these after the container is fully built
+        qrText->centerHorizontallyIn(con);
+        qrTexture->centerHorizontallyIn(con);
+
+    } else {
         if (wifiInfo.unsupported) {
             con->add(new TextElement("Unsupported platform!", font_size + font_mod))->constrain(ALIGN_CENTER_HORIZONTAL);
             con->add(new TextElement("This build will never return any WiFi info.", font_size))->constrain(ALIGN_CENTER_HORIZONTAL);
@@ -221,76 +304,21 @@ int main(int argc, char* argv[])
         con->width = SCREEN_WIDTH;
     }
 
-    con->height += 60;
-
-    auto escapeSpecialChars = [](std::string str) {
-        // escape ;, :, comma, and \ in the string
-        std::ostringstream ss;
-        for (char c : str) {
-            if (c == ';' || c == ':' || c == ',' || c == '\\') {
-                ss << '\\';
-            }
-            ss << c;
-        }
-        return ss.str();
-    };
-
-    auto buildWifiString = [escapeSpecialChars](WifiInfo* wifiInfo) {
-        // escape ;, :, and , in the ssid
-        std::ostringstream ss;
-        ss << "WIFI:";
-        if (wifiInfo->isWPA) {
-            ss << "T:WPA;";
-        } else if (wifiInfo->isWEP) {
-            ss << "T:WEP;";
-        } else {
-            ss << "T:nopass;";
-        }
-        ss << "S:" << escapeSpecialChars(wifiInfo->ssid) << ";";
-        if (wifiInfo->auth.length() > 0) {
-            ss << "P:" << escapeSpecialChars(wifiInfo->auth) << ";";
-        }
-        ss << "H:false;;"; // TODO: handle this?
-        return ss.str();
-    };
-
-    // create a QR code image element
-    // write the QR code png
-    std::string imgKey = "qr_showifi_tmp.png";
-    std::string qrString = buildWifiString(&wifiInfo);
-
-    // std::cout << "QR String: " << qrString << std::endl;
-
-    margin = 1;
-    QRcode* qrCode = encode(reinterpret_cast<const unsigned char*>(qrString.c_str()), qrString.length());
-    writePNG(qrCode, imgKey.c_str(), PNG32_TYPE);
-
-    ImageElement* qrImage = new ImageElement(imgKey);
-    qrImage->setSize(200, 200);
-    con->add(qrImage);
-
-    // delete the image file
-    std::remove(imgKey.c_str());
-    QRcode_free(qrCode);
-
-    con->height += 10;
-
-    TextElement* qrText = new TextElement("Scan to share network setup!", font_size - font_mod);
-    con->add(qrText);
-
-    // center these after the container is fully built
-    qrText->centerHorizontallyIn(con);
-    qrImage->centerHorizontallyIn(con);
-
     con->centerIn(display);
     display->child(con);
 
     // put the quit button in the bottom right
-    auto quitBtn = new Button("Close App", B_BUTTON, true);
+    auto btnText = "Close App";
+    auto btnMargin = 35;
+#if defined(_3DS) || defined(_3DS_MOCK)
+    btnText = "Quit";
+    btnMargin = 5;
+#endif
+    auto quitBtn = new Button(btnText, B_BUTTON, true);
     quitBtn->setAction([](){
 		RootDisplay::mainDisplay->requestQuit();
 	});
-    quitBtn->constrain(ALIGN_BOTTOM | ALIGN_RIGHT, 35);
+    quitBtn->constrain(ALIGN_BOTTOM | ALIGN_RIGHT, btnMargin);
     display->child(quitBtn);
 
 
