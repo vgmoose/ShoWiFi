@@ -2,7 +2,7 @@ BINARY      := ShoWiFi
 
 APP_TITLE	:= ShoWiFi
 APP_AUTHOR 	:= vgmoose
-APP_VERSION := 1.1.1
+APP_VERSION := 1.2
 
 # for some reason, the libqrencode library contains a main .c file, so we need to remove it
 $(shell rm -f ./libs/libqrencode/qrenc.c || true)
