@@ -3,6 +3,8 @@ Display active wifi info for homebrew'd Wii U and Switch consoles. 3DS and Wii s
 
 It also displays a [Wifi QR code](https://en.wikipedia.org/wiki/QR_code#Joining_a_Wi%E2%80%91Fi_network) to easily scan and share with other devices! 
 
+<img width="636" height="354" alt="Showing wifi info and QR code" src="https://github.com/user-attachments/assets/a32cc010-fe7a-4146-a346-bc27bc2024e4" />
+
 ### License
 This app uses the Chesto library under [GPLv3](https://github.com/fortheusers/chesto/blob/master/LICENSE).
 
